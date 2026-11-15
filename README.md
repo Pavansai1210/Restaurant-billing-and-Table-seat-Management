@@ -17,7 +17,13 @@ Customers scan a QR code on a table, order food, and pay. Staff use their own sc
 2. `python -m venv venv` then `venv\Scripts\activate`
 3. `pip install -r requirements.txt`
 4. Copy `.env.example` to `.env` and fill in your values.
-5. Create the database `restaurant_db`.
+5. In MySQL, create the database and a user:
+   ```sql
+   CREATE DATABASE restaurant_db;
+   CREATE USER 'restaurant_user'@'localhost' IDENTIFIED BY 'your-password';
+   GRANT ALL ON restaurant_db.* TO 'restaurant_user'@'localhost';
+   ```
+   Use the same password for `DB_PASSWORD` in your `.env`.
 6. `python manage.py migrate`
 7. `python manage.py create_admin yourname`
 8. `python manage.py runserver 0.0.0.0:8000`
