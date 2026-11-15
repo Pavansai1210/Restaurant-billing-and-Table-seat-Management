@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from menu.models import Category, MenuItem
 from .models import CustomerGroup, RestaurantTable
-from .views import HOLD_SECONDS
+from .views import HOLD_SECONDS ,MAX_HOLDS_PER_IP
 
 
 class HoldTest(TestCase):
@@ -76,22 +76,35 @@ class HoldTest(TestCase):
         self.assertEqual(reply.status_code, 410)
         self.assertEqual(CustomerGroup.objects.get(token=token).status, 'expired')
         self.assertEqual(self.t2.free_seats(), 6)
+    def test_one_phone_cannot_hold_too_many(self):
+        for _ in range(MAX_HOLDS_PER_IP):
+            self.assertEqual(self.hold(2, 1).status_code, 201)
+        reply = self.hold(2, 1)
+        self.assertEqual(reply.status_code, 429)
+        self.assertEqual(reply.json()['error'], 'too_many_holds')
 
+    def test_another_phone_is_not_blocked(self):
+        for _ in range(MAX_HOLDS_PER_IP):
+            self.hold(2, 1)
+        reply = self.api.post('/api/groups/hold/', {'table': 2, 'persons': 1},
+                              format='json', REMOTE_ADDR='10.0.0.99')
+        self.assertEqual(reply.status_code, 201)
 
 class HoldRaceTest(TransactionTestCase):
     def test_10_customers_hold_together(self):
         table = RestaurantTable.objects.create(number=1, capacity=6)
         results = []
 
-        def customer():
+        def customer(n):
             try:
                 client = APIClient()
-                reply = client.post('/api/groups/hold/', {'table': 1, 'persons': 2}, format='json')
+                reply = client.post('/api/groups/hold/', {'table': 1, 'persons': 2},
+                                    format='json', REMOTE_ADDR=f'10.0.0.{n}')
                 results.append(reply.status_code)
             finally:
                 connections.close_all()
 
-        threads = [threading.Thread(target=customer) for _ in range(10)]
+        threads = [threading.Thread(target=customer, args=(n,)) for n in range(10)]
         for t in threads:
             t.start()
         for t in threads:

@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -9,9 +8,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from .models import CustomerGroup, RestaurantTable
 from .serializers import GroupRequestSerializer
-
+from accounts.lockout import client_ip
 HOLD_SECONDS = 5 * 60
-
+MAX_HOLDS_PER_IP = 2
 
 def table_state(table):
     free = table.free_seats()
@@ -52,6 +51,16 @@ def take_seats(request, held):
     ser.is_valid(raise_exception=True)
     number = ser.validated_data['table']
     persons = ser.validated_data['persons']
+    ip = client_ip(request)
+    if held:
+        active = CustomerGroup.objects.filter(
+            client_ip=ip, status=CustomerGroup.Status.HELD,
+            hold_expires_at__gt=timezone.now()).count()
+        if active >= MAX_HOLDS_PER_IP:
+            return Response({
+                'error': 'too_many_holds',
+                'message': 'You already hold seats. Please finish that order or wait a few minutes.',
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
     with transaction.atomic():
         try:
@@ -66,7 +75,7 @@ def take_seats(request, held):
                     'status': CustomerGroup.Status.HELD,
                     'hold_expires_at': timezone.now() + timedelta(seconds=HOLD_SECONDS),
                 }
-            group = CustomerGroup.objects.create(table=table, persons=persons, **fields)
+            group = CustomerGroup.objects.create(table=table, persons=persons, client_ip=ip, **fields)
             body = {
                 'group_id': group.id,
                 'token': group.token,
