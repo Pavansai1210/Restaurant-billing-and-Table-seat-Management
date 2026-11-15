@@ -5,7 +5,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from .models import CustomerGroup, RestaurantTable
 from .serializers import GroupRequestSerializer
 
@@ -83,6 +84,7 @@ def take_seats(request, held):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def table_detail(request, number):
     try:
         table = RestaurantTable.objects.get(number=number, is_active=True)
@@ -97,10 +99,12 @@ def table_detail(request, number):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def create_group(request):
     return take_seats(request, held=False)
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def hold_group(request):
     return take_seats(request, held=True)

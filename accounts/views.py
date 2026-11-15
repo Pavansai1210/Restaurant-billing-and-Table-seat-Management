@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework.permissions import AllowAny
 from . import lockout
 from .audit import record
 from .models import Staff
@@ -13,7 +13,7 @@ from .serializers import LoginSerializer
 
 class LoginView(APIView):
     authentication_classes = []
-    permission_classes = []
+    permission_classes = [AllowAny]
 
     @staticmethod
     def locked(wait):
@@ -55,7 +55,7 @@ class LoginView(APIView):
 
 class RefreshView(APIView):
     authentication_classes = []
-    permission_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         try:

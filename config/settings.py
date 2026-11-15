@@ -167,6 +167,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'accounts.authentication.StaffJWTAuthentication',
     ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'config.permissions.DenyByDefault',
+    ],
 }
 
 SIMPLE_JWT = {

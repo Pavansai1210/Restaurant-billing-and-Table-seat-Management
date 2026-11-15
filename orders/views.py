@@ -5,7 +5,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from menu.models import MenuItem
 from seating.models import CustomerGroup
 from .models import Order, OrderItem
@@ -13,6 +14,7 @@ from .serializers import PlaceOrderSerializer
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def place_order(request):
     ser = PlaceOrderSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
@@ -92,6 +94,7 @@ def find_editable_order(order_id, token):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def edit_order(request, order_id):
     ser = PlaceOrderSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
@@ -123,6 +126,7 @@ def edit_order(request, order_id):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def cancel_order(request, order_id):
     token = request.data.get('token', '')
 
@@ -134,7 +138,10 @@ def cancel_order(request, order_id):
         order.save()
 
     return Response({'order_id': order.id, 'status': order.status})
+
+
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def order_detail(request, order_id):
     token = request.query_params.get('token', '')
     order = (Order.objects.select_related('table')
@@ -155,6 +162,7 @@ def order_detail(request, order_id):
         'edit_seconds_left': order.edit_seconds_left(),
         'ring_wait_seconds': order.ring_wait_seconds(),
     })
+
 def order_summary(order):
     return {
         'id': order.id,
@@ -170,6 +178,7 @@ def order_summary(order):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny]) 
 def group_orders(request):
     token = request.query_params.get('token', '')
     group = CustomerGroup.objects.select_related('table').filter(token=token).first()
@@ -189,6 +198,7 @@ def group_orders(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def remove_item(request, order_id, item_id):
     token = request.data.get('token', '')
     quantity = None
@@ -227,6 +237,7 @@ def remove_item(request, order_id, item_id):
         'edit_seconds_left': order.edit_seconds_left(),
     })
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def add_item(request, order_id, item_id):
     token = request.data.get('token', '')
 

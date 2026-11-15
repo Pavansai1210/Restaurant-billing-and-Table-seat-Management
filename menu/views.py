@@ -1,10 +1,12 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from .models import Category
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def menu_list(request):
     data = []
     for cat in Category.objects.prefetch_related('items'):

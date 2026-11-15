@@ -7,7 +7,8 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from orders.models import Order
 from seating.models import CustomerGroup
 from . import services
@@ -45,6 +46,7 @@ def failure(error):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def my_bill(request):
     group = read_group(request)
     if group is None:
@@ -53,6 +55,7 @@ def my_bill(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def pay_online(request):
     try:
         bill = services.pay_online(request.data.get('token', ''))
@@ -62,6 +65,7 @@ def pay_online(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def ask_cash(request):
     try:
         bill = services.request_cash(request.data.get('token', ''))
@@ -71,6 +75,7 @@ def ask_cash(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def withdraw_cash(request):
     try:
         bill = services.cancel_cash(request.data.get('token', ''))
@@ -80,6 +85,7 @@ def withdraw_cash(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def receipt_image(request):
     """The receipt code as a QR image, only for the group that owns it."""
     group = read_group(request)
