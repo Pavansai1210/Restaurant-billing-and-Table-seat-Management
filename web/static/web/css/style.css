@@ -58,3 +58,6 @@ table.list th, table.list td { border-bottom: 1px solid #e5ded2; padding: 8px; t
 }
 .thumb { border-radius: 8px; object-fit: cover; background: #eee; }
 .item-left { display: flex; align-items: center; gap: 10px; }
+table input[type="number"] {
+  width: 90px;
+}
