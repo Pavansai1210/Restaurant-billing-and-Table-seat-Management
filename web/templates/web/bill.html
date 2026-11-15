@@ -1,0 +1,42 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block title %}Bill - Table {{ number }}{% endblock %}
+{% block content %}
+<div id="app" data-table="{{ number }}">
+  <h1>Table {{ number }}: my bill</h1>
+  <p id="state" class="muted">Loading...</p>
+  <p id="notice" class="message" hidden></p>
+
+  <section id="bill" class="card" hidden>
+    <table class="list">
+      <tr><td>Food</td><td id="subtotal"></td></tr>
+      <tr id="discount-row"><td>Discount</td><td id="discount"></td></tr>
+      <tr><td>Tax</td><td id="tax"></td></tr>
+      <tr><td><strong>Total</strong></td><td><strong id="total"></strong></td></tr>
+    </table>
+    <p id="info" class="muted"></p>
+  </section>
+
+  <section id="pay-box" class="card" hidden>
+    <h2>How do you want to pay?</h2>
+    <button type="button" id="pay-online" class="primary">Pay online</button>
+    <button type="button" id="pay-cash" class="danger">Pay by cash</button>
+    <p class="muted">Online payment is a practice payment in this project.</p>
+  </section>
+
+  <section id="cash-box" class="card" hidden>
+    <p>Please wait. The cashier is coming to take your cash.</p>
+    <button type="button" id="cash-cancel" class="danger">Cancel cash request</button>
+  </section>
+
+  <section id="receipt-box" class="card" hidden>
+    <h2>Paid. Thank you!</h2>
+    <p>Show this code at the exit.</p>
+    <img id="receipt-image" alt="Receipt QR code" width="220" height="220">
+    <p>Code: <strong id="receipt-code"></strong></p>
+  </section>
+
+  <p><a id="back" href="#">Back to the table</a></p>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'web/js/bill.js' %}?v=2"></script>{% endblock %}

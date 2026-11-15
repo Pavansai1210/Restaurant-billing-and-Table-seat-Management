@@ -1,0 +1,19 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block title %}My orders - Table {{ number }}{% endblock %}
+{% block content %}
+<div id="app" data-table="{{ number }}">
+  <h1>Table {{ number }}: my orders</h1>
+  <p id="state" class="muted">Loading...</p>
+  <p id="notice" class="message" hidden></p>
+  <div id="orders"></div>
+  <section id="bill" class="card" hidden>
+    <p>Bill so far: <strong id="bill-total"></strong></p>
+    <p class="muted">Cancelled food is not counted.</p>
+  </section>
+  <p><a id="bill-link" href="#">See my bill and pay</a></p>
+
+  <p><a id="more" href="#">Order more food</a></p>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'web/js/orders.js' %}?v=6"></script>{% endblock %}

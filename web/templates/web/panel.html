@@ -1,0 +1,28 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div id="panel" data-section="{{ section }}">
+  <nav class="tabs">
+    <a href="/panel/" data-tab="home">Home</a>
+    <a href="/panel/menu/" data-tab="menu">Menu</a>
+    <a href="/panel/tables/" data-tab="tables">Tables</a>
+    <a href="/panel/staff/" data-tab="staff">Staff</a>
+    <a href="/panel/settings/" data-tab="settings">Settings</a>
+    <a href="/panel/orders/" data-tab="orders">Orders</a>
+    <a href="/panel/audit/" data-tab="audit">Audit log</a>
+    <a href="/kitchen/" data-tab="kitchen">Kitchen</a>
+    <a href="/waiter/" data-tab="waiter">Waiter</a>
+    <a href="/cashier/" data-tab="cashier">Cashier</a>
+    <a href="/gate/" data-tab="gate">Gate</a>
+    <button type="button" id="logout" class="danger small">Log out</button>
+  </nav>
+  <p id="who" class="muted"></p>
+  <p id="notice" class="message" hidden></p>
+  <div id="content"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'web/js/staff.js' %}?v=5"></script>
+<script src="{% static 'web/js/panel.js' %}?v=5"></script>
+{% endblock %}

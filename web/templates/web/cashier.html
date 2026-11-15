@@ -1,0 +1,20 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block title %}Cashier{% endblock %}
+{% block content %}
+<div id="cashier">
+  <nav class="tabs">
+    <a id="to-panel" href="/panel/" hidden>Admin panel</a>
+    <button type="button" id="logout" class="danger small">Log out</button>
+  </nav>
+  <h1>Cashier</h1>
+  <p id="who" class="muted"></p>
+  <p id="notice" class="message" hidden></p>
+  <p id="state" class="muted">Loading...</p>
+  <section id="requests"></section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'web/js/staff.js' %}?v=5"></script>
+<script src="{% static 'web/js/cashier.js' %}?v=1"></script>
+{% endblock %}

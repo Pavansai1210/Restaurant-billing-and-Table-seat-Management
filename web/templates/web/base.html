@@ -1,0 +1,15 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Restaurant{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'web/css/style.css' %}?v=10">
+</head>
+<body>
+  <header class="top"><a href="/">Restaurant</a></header>
+  <main class="page">{% block content %}{% endblock %}</main>
+    <script src="{% static 'web/js/api.js' %}?v=3"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

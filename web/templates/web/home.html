@@ -1,0 +1,13 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block content %}
+<h1>Welcome</h1>
+<p class="muted">Scan the QR code on your table. While we test, type the table number here.</p>
+<form id="go" class="card" method="get" action="/">
+  <label for="number">Table number</label>
+  <input id="number" name="number" type="number" min="1" required>
+  <button type="submit" class="primary">Open table</button>
+</form>
+<p class="muted"><a href="/staff/login/">Staff login</a></p>
+{% endblock %}
+{% block scripts %}<script src="{% static 'web/js/home.js' %}?v=4"></script>{% endblock %}

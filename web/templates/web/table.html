@@ -1,0 +1,35 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block title %}Table {{ number }}{% endblock %}
+{% block content %}
+<div id="app" data-table="{{ number }}">
+  <h1>Table {{ number }}</h1>
+  <p id="seat-info" class="muted">Loading...</p>
+
+  <section id="seat-box" class="card" hidden>
+    <h2>How many seats do you need?</h2>
+    <p class="muted">Count yourself and the people who share your bill.</p>
+    <div class="stepper">
+      <button type="button" id="minus">-</button>
+      <span id="persons">1</span>
+      <button type="button" id="plus">+</button>
+    </div>
+    <button type="button" id="ok" class="primary">OK</button>
+    <p id="seat-message" class="message" hidden></p>
+    <ul id="suggestions"></ul>
+  </section>
+
+  <section id="menu-box" hidden>
+    <h2>Menu</h2>
+    <p id="hold-note" class="message" hidden></p>
+    <p><a id="my-orders" href="#">See my orders and bill</a></p>
+    <div id="menu"></div>
+    <div class="cart">
+      <span id="cart-summary">Nothing selected</span>
+      <button type="button" id="place" class="primary" disabled>Place order</button>
+    </div>
+    <p id="order-message" class="message" hidden></p>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'web/js/table.js' %}?v=9"></script>{% endblock %}

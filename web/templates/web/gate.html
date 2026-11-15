@@ -1,0 +1,26 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block title %}Gate{% endblock %}
+{% block content %}
+<div id="gate">
+  <nav class="tabs">
+    <a id="to-panel" href="/panel/" hidden>Admin panel</a>
+    <button type="button" id="logout" class="danger small">Log out</button>
+  </nav>
+  <h1>Exit gate</h1>
+  <p id="who" class="muted"></p>
+  <form id="check" class="card" method="get" action="/gate/">
+    <label for="code">Receipt code (type it, or use the scanner)</label>
+    <input id="code" type="text" autocomplete="off" required>
+    <button type="submit" id="submit" class="primary">Check</button>
+    <p class="muted">Checking uses the receipt. Each receipt lets one group go.</p>
+  </form>
+  <p id="result" class="result" hidden></p>
+  <h2>Last checks</h2>
+  <ul id="history"></ul>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'web/js/staff.js' %}?v=5"></script>
+<script src="{% static 'web/js/gate.js' %}?v=1"></script>
+{% endblock %}
