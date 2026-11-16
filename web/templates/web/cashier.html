@@ -12,9 +12,15 @@
   <p id="notice" class="message" hidden></p>
   <p id="state" class="muted">Loading...</p>
   <section id="requests"></section>
+  <h2>Active visits</h2>
+  <p id="visits-state" class="muted"></p>
+  <section id="visits"></section>
+  <h2>Unpaid bills</h2>
+  <p id="unpaid-state" class="muted"></p>
+  <section id="unpaid"></section>
 </div>
 {% endblock %}
 {% block scripts %}
 <script src="{% static 'web/js/staff.js' %}?v=5"></script>
-<script src="{% static 'web/js/cashier.js' %}?v=1"></script>
+<script src="{% static 'web/js/cashier.js' %}?v=4"></script>
 {% endblock %}

@@ -280,6 +280,167 @@ class AdminBillingSettingsTest(BillingBase):
         self.assertEqual(self.as_staff('cash1').get('/api/admin/billing-settings/').status_code, 403)
 
 
+class CloseUnpaidTest(BillingBase):
+    def close(self, user='cash1'):
+        group_id = CustomerGroup.objects.get(token=self.token).id
+        return self.as_staff(user).post(
+            f'/api/cashier/visits/{group_id}/close-unpaid/', format='json')
+
+    def test_close_frees_the_seats_and_keeps_the_debt(self):
+        self.order()
+        self.assertEqual(self.table.free_seats(), 2)
+        reply = self.close()
+        self.assertEqual(reply.status_code, 200)
+        self.assertEqual(reply.json()['state'], 'unpaid')
+        self.assertEqual(self.table.free_seats(), 4)
+        bill = Bill.objects.get()
+        self.assertEqual(bill.state, 'unpaid')
+        self.assertEqual(str(bill.total), '420.00')
+        self.assertEqual(CustomerGroup.objects.get(token=self.token).status, 'left')
+        self.assertEqual(Receipt.objects.count(), 0)
+        self.assertTrue(AuditLog.objects.filter(action='bill.closed_unpaid').exists())
+
+    def test_unpaid_amount_is_frozen(self):
+        self.order()
+        self.close()
+        MenuItem.objects.filter(id=self.a.id).update(price=999)
+        self.assertEqual(str(Bill.objects.get().figures()['total']), '420.00')
+
+    def test_cannot_close_twice(self):
+        self.order()
+        self.close()
+        again = self.close()
+        self.assertEqual(again.status_code, 409)
+        self.assertEqual(again.json()['error'], 'not_active')
+
+    def test_cannot_close_a_paid_visit(self):
+        self.order()
+        self.pay()
+        reply = self.close()
+        self.assertEqual(reply.status_code, 409)
+        self.assertEqual(Bill.objects.get().state, 'paid')
+
+    def test_customer_cannot_pay_after_the_close(self):
+        self.order()
+        self.close()
+        reply = self.pay()
+        self.assertEqual(reply.status_code, 409)
+        self.assertEqual(reply.json()['error'], 'group_closed')
+
+    def test_list_of_active_visits(self):
+        self.order()
+        cashier = self.as_staff('cash1')
+        rows = cashier.get('/api/cashier/visits/').json()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['table'], 1)
+        self.assertEqual(rows[0]['total'], '420.00')
+        self.assertEqual(Bill.objects.count(), 0)      # reading the list makes no bill
+        self.close()
+        self.assertEqual(cashier.get('/api/cashier/visits/').json(), [])
+
+    def test_roles(self):
+        self.order()
+        self.assertEqual(self.close(user='anil').status_code, 403)
+        self.assertEqual(self.close(user='gate1').status_code, 403)
+        self.assertEqual(self.as_staff('gate1').get('/api/cashier/visits/').status_code, 403)
+        self.assertEqual(APIClient().get('/api/cashier/visits/').status_code, 401)
+    def test_unserved_food_is_not_charged(self):
+        order_id = self.order(serve=False)
+        reply = self.close()
+        self.assertEqual(reply.status_code, 200)
+        self.assertEqual(reply.json()['state'], 'closed')
+        self.assertEqual(Bill.objects.count(), 0)
+        self.assertEqual(Order.objects.get(id=order_id).status, 'cancelled')
+        self.assertEqual(self.table.free_seats(), 4)
+        self.assertEqual(CustomerGroup.objects.get(token=self.token).status, 'left')
+
+    def test_only_served_food_is_charged(self):
+        self.order()
+        later = self.order([(self.b, 1)], serve=False)
+        reply = self.close()
+        self.assertEqual(reply.json()['total'], '420.00')
+        self.assertEqual(Order.objects.get(id=later).status, 'cancelled')
+
+
+class SettleUnpaidTest(BillingBase):
+    def close(self):
+        group_id = CustomerGroup.objects.get(token=self.token).id
+        return self.as_staff('cash1').post(
+            f'/api/cashier/visits/{group_id}/close-unpaid/', format='json')
+
+    def settle(self, bill_id, user='cash1'):
+        return self.as_staff(user).post(
+            f'/api/cashier/unpaid/{bill_id}/settle/', format='json')
+
+    def closed_bill(self):
+        self.order()
+        self.close()
+        return Bill.objects.get()
+
+    def test_list_of_unpaid_bills(self):
+        self.closed_bill()
+        rows = self.as_staff('cash1').get('/api/cashier/unpaid/').json()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['table'], 1)
+        self.assertEqual(rows[0]['total'], '420.00')
+
+    def test_settle_makes_a_paid_bill_and_a_receipt(self):
+        bill = self.closed_bill()
+        reply = self.settle(bill.id)
+        self.assertEqual(reply.status_code, 200)
+        self.assertEqual(reply.json()['state'], 'paid')
+        bill.refresh_from_db()
+        self.assertEqual(bill.method, 'cash')
+        self.assertEqual(bill.received_by.username, 'cash1')
+        self.assertEqual(str(bill.total), '420.00')
+        self.assertEqual(Receipt.objects.count(), 1)
+        self.assertTrue(AuditLog.objects.filter(action='bill.unpaid_settled').exists())
+        self.assertEqual(self.as_staff('cash1').get('/api/cashier/unpaid/').json(), [])
+
+    def test_seats_stay_free(self):
+        bill = self.closed_bill()
+        self.settle(bill.id)
+        self.assertEqual(self.table.free_seats(), 4)
+        self.assertEqual(CustomerGroup.objects.get(token=self.token).status, 'left')
+
+    def test_amount_stays_frozen(self):
+        bill = self.closed_bill()
+        MenuItem.objects.filter(id=self.a.id).update(price=999)
+        self.settle(bill.id)
+        bill.refresh_from_db()
+        self.assertEqual(str(bill.total), '420.00')
+
+    def test_gate_lets_them_go_after_settling(self):
+        bill = self.closed_bill()
+        self.settle(bill.id)
+        code = Receipt.objects.get().code
+        reply = self.as_staff('gate1').post('/api/gate/check/', {'code': code}, format='json')
+        self.assertEqual(reply.json()['result'], 'ok')
+
+    def test_cannot_settle_twice_or_an_open_bill(self):
+        bill = self.closed_bill()
+        self.settle(bill.id)
+        again = self.settle(bill.id)
+        self.assertEqual(again.status_code, 409)
+        self.assertEqual(again.json()['error'], 'already_paid')
+
+        other = Bill.objects.create(group=CustomerGroup.objects.create(
+            table=self.table, persons=1))
+        reply = self.settle(other.id)
+        self.assertEqual(reply.status_code, 409)
+        self.assertEqual(reply.json()['error'], 'not_unpaid')
+
+    def test_unknown_bill(self):
+        self.assertEqual(self.settle(999).status_code, 404)
+
+    def test_roles(self):
+        bill = self.closed_bill()
+        self.assertEqual(self.settle(bill.id, user='gate1').status_code, 403)
+        self.assertEqual(self.settle(bill.id, user='anil').status_code, 403)
+        self.assertEqual(self.as_staff('gate1').get('/api/cashier/unpaid/').status_code, 403)
+        self.assertEqual(APIClient().get('/api/cashier/unpaid/').status_code, 401)
+
+
 class PaymentRaceTest(TransactionTestCase):
     def test_10_payments_at_once_make_one_receipt(self):
         cat = Category.objects.create(name='Biryani')

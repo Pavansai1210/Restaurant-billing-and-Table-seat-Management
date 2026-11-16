@@ -111,3 +111,52 @@ def receive_cash(bill_id, staff):
         group = CustomerGroup.objects.select_for_update().get(pk=bill.group_id)
         check_can_pay(group)
         return finish(bill, group, Bill.Method.CASH, staff)
+
+def close_unpaid(group_id, staff):
+    """The customers left. Charge only served food, cancel the rest, free the seats."""
+    with transaction.atomic():
+        group = (CustomerGroup.objects.select_for_update()
+                 .select_related('table').filter(id=group_id).first())
+        if group is None:
+            raise BillingError('group_not_found', 'This visit was not found.', 404)
+        if group.status != CustomerGroup.Status.SEATED:
+            raise BillingError('not_active', 'This visit is not active.')
+        existing = Bill.objects.filter(group=group).first()
+        if existing and existing.state == Bill.State.PAID:
+            raise BillingError('already_paid', 'This bill is already paid.')
+
+        figures = Bill(group=group).live_figures(served_only=True)
+        group.orders.filter(status__in=OPEN_FOOD).update(status=Order.Status.CANCELLED)
+        group.status = CustomerGroup.Status.LEFT
+        group.save()
+        if figures['total'] <= 0:
+            return None                      # nothing was served, so nothing is owed
+
+        bill = get_bill(group)
+        bill.subtotal = figures['subtotal']
+        bill.discount = figures['discount']
+        bill.tax = figures['tax']
+        bill.total = figures['total']
+        bill.method = ''
+        bill.cash_requested_at = None
+        bill.state = Bill.State.UNPAID
+        bill.save()
+        return bill
+
+def settle_unpaid(bill_id, staff):
+    """A customer who left without paying comes back and pays cash at the counter."""
+    with transaction.atomic():
+        bill = Bill.objects.select_for_update().filter(id=bill_id).first()
+        if bill is None:
+            raise BillingError('bill_not_found', 'This bill was not found.', 404)
+        if bill.state == Bill.State.PAID:
+            raise BillingError('already_paid', 'This bill is already paid.')
+        if bill.state != Bill.State.UNPAID:
+            raise BillingError('not_unpaid', 'This bill was not closed as unpaid.')
+        bill.method = Bill.Method.CASH
+        bill.state = Bill.State.PAID
+        bill.paid_at = timezone.now()
+        bill.received_by = staff
+        bill.save()
+        Receipt.objects.get_or_create(bill=bill)
+        return bill

@@ -8,7 +8,6 @@ from seating.models import CustomerGroup
 
 CENTS = Decimal('0.01')
 
-
 def make_receipt_code():
     return secrets.token_urlsafe(9)
 
@@ -40,7 +39,7 @@ class Bill(models.Model):
         OPEN = 'open', 'Open'
         CASH_REQUESTED = 'cash_requested', 'Cash requested'
         PAID = 'paid', 'Paid'
-
+        UNPAID = 'unpaid', 'Closed unpaid'
     group = models.OneToOneField(CustomerGroup, on_delete=models.PROTECT, related_name='bill')
     state = models.CharField(max_length=15, choices=State.choices, default=State.OPEN)
     method = models.CharField(max_length=10, choices=Method.choices, blank=True)
@@ -58,9 +57,12 @@ class Bill(models.Model):
         on_delete=models.SET_NULL, related_name='cash_received')
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def live_figures(self):
+    def live_figures(self, served_only=False):
         """The amounts as they stand now, from the group's orders that are not cancelled."""
-        orders = self.group.orders.exclude(status=Order.Status.CANCELLED).prefetch_related('items')
+        orders = self.group.orders.exclude(status=Order.Status.CANCELLED)
+        if served_only:
+            orders = orders.filter(status='served')
+        orders = orders.prefetch_related('items')
         subtotal = sum((o.total() for o in orders), Decimal('0'))
         setting = BillingSetting.get()
         discount = money(subtotal * setting.discount_percent / 100)
@@ -73,7 +75,7 @@ class Bill(models.Model):
         }
 
     def figures(self):
-        if self.state == self.State.PAID:
+        if self.state in (self.State.PAID, self.State.UNPAID):
             return {'subtotal': self.subtotal, 'discount': self.discount,
                     'tax': self.tax, 'total': self.total}
         return self.live_figures()
