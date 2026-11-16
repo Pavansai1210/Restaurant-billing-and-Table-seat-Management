@@ -40,7 +40,9 @@ class Order(models.Model):
         'accounts.Staff', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='assigned_orders',
     )
+
     created_at = models.DateTimeField(auto_now_add=True)
+    cancel_reason = models.CharField(max_length=30, blank=True)
 
     def edit_seconds_left(self):
         if self.status != self.Status.PLACED:

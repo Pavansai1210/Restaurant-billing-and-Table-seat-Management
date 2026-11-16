@@ -126,7 +126,8 @@ def close_unpaid(group_id, staff):
             raise BillingError('already_paid', 'This bill is already paid.')
 
         figures = Bill(group=group).live_figures(served_only=True)
-        group.orders.filter(status__in=OPEN_FOOD).update(status=Order.Status.CANCELLED)
+        group.orders.filter(status__in=OPEN_FOOD).update(
+            status=Order.Status.CANCELLED, cancel_reason='visit_closed')
         group.status = CustomerGroup.Status.LEFT
         group.save()
         if figures['total'] <= 0:

@@ -167,6 +167,7 @@ def order_summary(order):
     return {
         'id': order.id,
         'status': order.status,
+        'cancel_reason': order.cancel_reason,
         'created_at': order.created_at,
         'edit_seconds_left': order.edit_seconds_left(),
         'ring_wait_seconds': order.ring_wait_seconds(),

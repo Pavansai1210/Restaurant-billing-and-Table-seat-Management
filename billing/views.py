@@ -32,6 +32,7 @@ def bill_body(group, bill=None):
         'total': f"{live['total']:.2f}",
         'can_pay': has_food and not waiting and group.status == CustomerGroup.Status.SEATED,
         'food_waiting': waiting,
+        'group_status': group.status,
         'receipt_code': code,
     }
 

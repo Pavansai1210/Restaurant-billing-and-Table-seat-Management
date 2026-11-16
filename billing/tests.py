@@ -102,6 +102,11 @@ class BillTest(BillingBase):
         self.assertEqual(reply.status_code, 409)
         self.assertEqual(reply.json()['error'], 'nothing_to_pay')
 
+    def test_bill_tells_the_group_status(self):
+        self.order()
+        data = self.api.get('/api/bill/', {'token': self.token}).json()
+        self.assertEqual(data['group_status'], 'seated')
+
 
 class OnlinePaymentTest(BillingBase):
     def test_pay_online_frees_the_seats(self):
@@ -361,6 +366,12 @@ class CloseUnpaidTest(BillingBase):
         self.assertEqual(reply.json()['total'], '420.00')
         self.assertEqual(Order.objects.get(id=later).status, 'cancelled')
 
+    def test_cancel_reason_is_saved_and_shown(self):
+        order_id = self.order(serve=False)
+        self.close()
+        self.assertEqual(Order.objects.get(id=order_id).cancel_reason, 'visit_closed')
+        data = self.api.get('/api/group/orders/', {'token': self.token}).json()
+        self.assertEqual(data['orders'][0]['cancel_reason'], 'visit_closed')
 
 class SettleUnpaidTest(BillingBase):
     def close(self):

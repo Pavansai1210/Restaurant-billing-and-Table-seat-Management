@@ -146,6 +146,10 @@
     card.appendChild(list);
     card.appendChild(el('p', 'Order total: ' + money(order.total)));
 
+    if (order.status === 'cancelled' && order.cancel_reason === 'visit_closed') {
+      card.appendChild(el('p', 'The visit was closed before this was served. You are not charged.', 'muted'));
+    }
+
     if (order.status !== 'cancelled') {
       const note = el('p', noteText(order.edit_seconds_left), 'muted');
       notes[order.id] = note;

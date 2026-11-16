@@ -37,7 +37,36 @@
     codeEl.textContent = reply.data.code;
   }
 
+    function hideAll() {
+    billBox.hidden = true;
+    payBox.hidden = true;
+    cashBox.hidden = true;
+    receiptBox.hidden = true;
+  }
+
   function draw(d) {
+    const paid = d.state === 'paid';
+    const cash = d.state === 'cash_requested';
+    const unpaid = d.state === 'unpaid';
+
+    if (!paid && !cash && !unpaid) {
+      if (d.group_status === 'left') {
+        hideAll();
+        say(stateEl, 'This visit was closed. Nothing is owed.');
+        return;
+      }
+      if (d.food_waiting) {
+        hideAll();
+        say(stateEl, 'Your bill will appear when all your food is served.');
+        return;
+      }
+      if (Number(d.total) === 0) {
+        hideAll();
+        say(stateEl, 'You have not ordered anything yet.');
+        return;
+      }
+    }
+
     stateEl.hidden = true;
     billBox.hidden = false;
     subtotalEl.textContent = money(d.subtotal);
@@ -46,9 +75,7 @@
     taxEl.textContent = money(d.tax);
     totalEl.textContent = money(d.total);
 
-    const paid = d.state === 'paid';
-    const cash = d.state === 'cash_requested';
-    payBox.hidden = paid || cash || !d.can_pay;
+    payBox.hidden = paid || cash || unpaid || !d.can_pay;
     cashBox.hidden = !cash;
     receiptBox.hidden = !paid;
 
@@ -56,15 +83,13 @@
       localStorage.setItem(PAID_KEY, token);
       infoEl.textContent = '';
       showReceipt();
-    } else if (!d.can_pay && !cash) {
-      infoEl.textContent = d.food_waiting
-        ? 'You can pay when all your food has been served.'
-        : 'You have not ordered anything yet.';
+    } else if (unpaid) {
+      infoEl.textContent = 'This visit was closed before you paid. Please pay at the cashier, then show your receipt at the exit.';
     } else {
       infoEl.textContent = '';
     }
   }
-
+  
   async function refresh() {
     if (!token) {
       say(stateEl, 'You have no seats at this table yet. Choose your seats first.');
