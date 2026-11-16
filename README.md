@@ -6,7 +6,7 @@ Customers scan a QR code on a table, order food, and pay. Staff use their own sc
 ## Features
 - Seat-level table booking with a database lock (no double seating)
 - Seat holds expire after 5 minutes, and one network address can have only 2 active holds
-- Order, edit, and cancel food within 2 minutes
+- Order, edit, and cancel food within 1 minutes
 - Ring the kitchen when an order is late
 - Chef, waiter, cashier and gate screens
 - Cash or online payment, receipt QR code, exit check at the gate
