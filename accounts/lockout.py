@@ -1,6 +1,6 @@
 import math
 from datetime import timedelta
-
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -11,7 +11,12 @@ LOCK = timedelta(minutes=15)
 
 
 def client_ip(request):
-    return request.META.get('REMOTE_ADDR', '')
+    real = request.META.get('REMOTE_ADDR', '')
+    if getattr(settings, 'TRUST_FORWARDED_FOR', False) and real in ('127.0.0.1', '::1'):
+        forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded:
+            return forwarded.split(',')[-1].strip()[:45]
+    return real
 
 
 def seconds_locked(username, ip):
